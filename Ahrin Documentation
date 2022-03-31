@@ -1,0 +1,88 @@
+The Ahrin Assembly/Machine Language
+Each line in an Ahrin assembly language program does one (and only one) of three things:
+1. Contain an instruction.
+2. Create a label.
+3. Create a variable.
+Instructions
+The Ahrin assembly language supports twelve instructions. They are listed below, categorized by how many operands
+they have.
+• Two operands: (first operand is “dst”, second is “src”)
+– mov: dst = src
+∗ Opcode: 00002
+– add: dst += src
+∗ Opcode: 00012
+– cmp: dst - src
+∗ Opcode: 00102
+• One operand: (the operand is referred to as “op”)
+– push: push op onto stack.
+∗ Opcode: 00112
+– pop: pop from stack into op.
+∗ Opcode: 01002
+– call: call function called op.
+∗ Opcode: 01012
+– je: jump to op if ZF flag is set.
+∗ Opcode: 01102
+– jge: jump to op if SF flag equals OF flag.
+3
+∗ Opcode: 01112
+– jl: jump to op if SF flag doesn’t equal OF flag.
+∗ Opcode: 10002
+– j: unconditional jump.
+∗ Opcode: 10012
+• Zero operands:
+– ret: return from function.
+∗ Opcode: 10102
+– nop: do nothing (“no operation”).
+∗ Opcode: 10112
+There are no pseudoinstructions.
+Addressing Modes
+Any use of the word “constant” or “index” refers to a 32-bit signed integer.
+Each operand is given in one of four addressing modes:
+1. Immediate mode: a dollar sign ($) followed by a constant or label.
+• Representation: 002
+2. Register mode: a register, given by name (e.g. R3) with no percent sign (%) or any other preceding character.
+• Representation: 012
+3. Direct mode: a label. This mode is helpful for accessing a variable’s value.
+• Representation: 102
+4. Indexed mode: an index followed by a register in parentheses. This mode is helpful for accessing an element of an array
+or data on the stack.
+• Representation: 112
+Restrictions on addressing modes:
+• The first operand of a mov or add instruction cannot be in immediate mode.
+• The operand of a pop instruction cannot be in immediate mode.
+• The operand of a jump instruction (including call) must be in direct mode.
+Unlike in x64, it is possible for an Ahrin instruction to have two operands that access main memory. This is probably
+the only thing that Ahrin does better than x64.
+ Global Variables
+The Ahrin assembly language only supports the creation of 32-bit unsigned integer global variables. A global variable is
+created with the word “var” followed by the variable’s initial value.
+There is no distinction between data and text sections. It is possible to create a global variable between instructions,
+even if that would cause chaos.
+ Labels
+As far as Ahrin assembly code goes, labels are the same as in x64 and RISC-V assembly code, except that the syntax is
+a bit different.
+Things become more complicated once we consider machine code. When a label is used in an operand, the label’s value
+must be stored in the machine code representation. This is talked about more in the examples below.
+It is NOT an error if an Ahrin assembly language file does not define the main label.
+
+Encoding an Instruction in Machine Code
+An instruction’s machine code representation consists of the following components concatenated together:
+• Opcode.
+• First operand’s addressing mode.
+• First operand’s representation.
+• Second operand’s addressing mode.
+• Second operand’s representation.
+If the operand is in register mode, then its representation is just the appropriate sequence of three bits mentioned above.
+If the operand is in direct immediate mode and is a constant (e.g. $5), then its representation is the constant’s base-2
+representation (using 32 bits). If the operand is a label (whether in immeidate mode like $sum or direct mode like sum), then
+its representation is the label’s value in base-2 (using 32 bits). (Labels’ values are talked about more in the assembler section.)
+If the operand is in indexed addressing mode, then its representation is the base-2 representation of the index (using 32 bits)
+followed by the three bit sequence of the register that’s in the parentheses.
+Update: Signed integers are represented in two’s complement, not signed magnitude.
+If the instruction only has one operand, then ignore the last two parts. If the instruction has zero operands, then the
+representation is just the opcode.
+The Ahrin CPU is byte-addressable, so although instructions are variable-length, we don’t want any instruction’s length
+to be a non-integer number of bytes / a number of bits that is not a multiple of eight. Thus, each instruction’s machine code
+representation should end in whatever number of zeros is needed to make the instruction’s length in bits be a multiple of
+eight.
+Examples of machine code are elaborated on in the assembler section
